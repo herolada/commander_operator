@@ -1,5 +1,6 @@
 from glob import glob
 import os
+
 from setuptools import find_packages, setup
 
 package_name = 'commander_operator'
@@ -15,7 +16,8 @@ setup(
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
         (os.path.join('share', package_name, 'data'), glob('data/*.yaml')),
         (os.path.join('share', package_name, 'data', 'routes'), glob('data/routes/*.yaml')),
-        (os.path.join('share', package_name, 'data', 'routes_wgs'), glob('data/routes_wgs/*.yaml')),
+        (os.path.join('share', package_name, 'data', 'routes_wgs'),
+            glob('data/routes_wgs/*.yaml')),
     ],
     package_data={'': ['py.typed']},
     install_requires=['setuptools'],
