@@ -1,0 +1,5 @@
+# frame_id is not defined, as the robot does not require specifically a gnss frame
+waypoints:
+  home:         {lat: 50.00, lon: 14.00, max_linear_vel: 1.2, max_angular_vel: 1.2, lookahead_distance: 1.5}
+  checkpoint_1: {lat: 50.01, lon: 14.01}
+  checkpoint_2: {lat: 50.02, lon: 14.02, lookahead_distance: 1.5}

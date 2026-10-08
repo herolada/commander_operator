@@ -1,0 +1,9 @@
+frame_id: map
+name: example_route
+waypoints:
+  start:        {x: 0.0, y: 0.0, max_linear_vel: 1.2, mandatory: true}
+  waypoint_1:   {x: 1.0, y: 1.0, max_linear_vel: 1.5, mandatory: false}
+  waypoint_2:   {x: 2.0, y: 2.0, max_linear_vel: 1.5, mandatory: false}
+  checkpoint_a: {x: 3.0, y: 3.0, max_linear_vel: 1.0, mandatory: true}
+  waypoint_3:   {x: 4.0, y: 4.0, max_linear_vel: 1.0, mandatory: false}
+  waypoint_4:   {x: 5.0, y: 5.0, max_linear_vel: 1.2, max_angular_vel: 1.2, lookahead_distance: 1.5, mandatory: false}
