@@ -85,7 +85,7 @@ Parameters of `waypoint_recorder`:
 
 In RViz:
 
-1. *Panels -> Add New Panel -> commander_operator_rviz/WaypointRecorder*, optionally add a *MarkerArray* display on `/waypoint_recorder/pending_markers` to see the clicked points.
+1. *Panels -> Add New Panel -> commander_operator_rviz/WaypointRecorder*, optionally add a *MarkerArray* display on `/waypoint_recorder/pending_markers` to see the clicked points (orange = mandatory, blue = optional route waypoint; the segment leading into a waypoint has its color).
 2. Choose *Waypoint* or *Route* and *Local* or *WGS*, press *Record* (this activates the WaypointClick tool, shortcut `w`) and click on the ground plane (z = 0 of the fixed frame).
    - *Waypoint*: a click places the point (a new click moves it), fill in the name and the parameters, then *Save*.
    - *Route*: every click appends a point with the name and parameters currently in the panel; an empty name gives `waypoint_N` (N = position in the route). Fill in the route name and *Save*. *Undo last* / *Clear* edit the pending points.

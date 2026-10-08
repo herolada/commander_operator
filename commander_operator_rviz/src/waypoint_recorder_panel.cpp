@@ -107,7 +107,9 @@ WaypointRecorderPanel::WaypointRecorderPanel(QWidget * parent)
   lookahead_distance_spin_ = makeSpinBox(50.0, 1.5);
   mandatory_check_ = new QCheckBox("mandatory");
   mandatory_check_->setChecked(true);
-  mandatory_check_->setToolTip("Whether the robot must reach this route waypoint.");
+  mandatory_check_->setToolTip(
+    "Whether the robot must reach this route waypoint "
+    "(pending markers: orange = mandatory, blue = optional).");
 
   auto params_box = new QGroupBox("Waypoint parameters");
   auto params_layout = new QGridLayout(params_box);
@@ -542,18 +544,31 @@ void WaypointRecorderPanel::publishMarkers()
     std_msgs::msg::Header header;
     header.frame_id = pending_.front().goal.goal.header.frame_id;
 
+    // A line list (not a strip) so that each segment gets one solid color: the
+    // color of the waypoint it leads into.
     visualization_msgs::msg::Marker line;
     line.header = header;
     line.ns = "route";
-    line.type = visualization_msgs::msg::Marker::LINE_STRIP;
+    line.type = visualization_msgs::msg::Marker::LINE_LIST;
     line.scale.x = 0.08;
-    line.color.r = 1.0f;
-    line.color.g = 0.6f;
     line.color.a = 0.8f;
     line.pose.orientation.w = 1.0;
 
     for (size_t i = 0; i < pending_.size(); ++i) {
       const auto & position = pending_[i].goal.goal.pose.position;
+
+      std_msgs::msg::ColorRGBA color;
+      color.a = 1.0f;
+      if (routeMode() && !pending_[i].goal.mandatory) {
+        // Optional route waypoint: blue
+        color.r = 0.2f;
+        color.g = 0.6f;
+        color.b = 1.0f;
+      } else {
+        // Mandatory route waypoint (or a single waypoint): orange
+        color.r = 1.0f;
+        color.g = 0.4f;
+      }
 
       visualization_msgs::msg::Marker sphere;
       sphere.header = header;
@@ -563,9 +578,7 @@ void WaypointRecorderPanel::publishMarkers()
       sphere.pose.position = position;
       sphere.pose.orientation.w = 1.0;
       sphere.scale.x = sphere.scale.y = sphere.scale.z = 0.4;
-      sphere.color.r = 1.0f;
-      sphere.color.g = 0.4f;
-      sphere.color.a = 1.0f;
+      sphere.color = color;
       array.markers.push_back(sphere);
 
       visualization_msgs::msg::Marker label;
@@ -582,10 +595,16 @@ void WaypointRecorderPanel::publishMarkers()
         (point_name_edit_->text().isEmpty() ? "<name>" : point_name_edit_->text().toStdString());
       array.markers.push_back(label);
 
-      line.points.push_back(position);
+      if (i > 0) {
+        line.points.push_back(pending_[i - 1].goal.goal.pose.position);
+        line.points.push_back(position);
+        color.a = 0.8f;
+        line.colors.push_back(color);
+        line.colors.push_back(color);
+      }
     }
 
-    if (line.points.size() > 1) {
+    if (!line.points.empty()) {
       array.markers.push_back(line);
     }
   }
