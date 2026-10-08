@@ -67,3 +67,28 @@ waypoints:
   waypoint_4:   {lat: 50.05, lon: 14.05}
   ...
 ```
+
+### Recording waypoints and routes in RViz
+
+The `commander_operator_rviz` package provides a **Waypoint Recorder** panel and a **WaypointClick** tool, the `waypoint_recorder` node of this package writes the clicked points into the files above.
+
+```
+ros2 launch commander_operator waypoint_recorder.launch.py data_dir:=<path to the package source>/data
+```
+
+Parameters of `waypoint_recorder`:
+
+- `map_frame` (default `map`): frame local waypoints and routes are saved in, clicked points are transformed into it. `waypoints.yaml` must have the same `frame_id`.
+- `ecef_frame` (default `earth`): ECEF frame used for WGS points (`clicked frame -> ecef_frame` by TF, then ECEF -> WGS by pyproj). The height is dropped, as when loading.
+- `data_dir` (default: installed `share/commander_operator/data`): where the files are written. With `--symlink-install` editing the installed files changes the source ones, but new route files would only end up in `install/`, so point this to the source `data` folder. Use the same `data_dir` for `commander_operator`, the recorder asks it to reload (`commander_operator/reload`) after every save.
+- `tf_timeout` (default `1.0` s).
+
+In RViz:
+
+1. *Panels -> Add New Panel -> commander_operator_rviz/WaypointRecorder*, optionally add a *MarkerArray* display on `/waypoint_recorder/pending_markers` to see the clicked points.
+2. Choose *Waypoint* or *Route* and *Local* or *WGS*, press *Record* (this activates the WaypointClick tool, shortcut `w`) and click on the ground plane (z = 0 of the fixed frame).
+   - *Waypoint*: a click places the point (a new click moves it), fill in the name and the parameters, then *Save*.
+   - *Route*: every click appends a point with the name and parameters currently in the panel; an empty name gives `waypoint_N` (N = position in the route). Fill in the route name and *Save*. *Undo last* / *Clear* edit the pending points.
+3. Existing waypoints / route files are replaced only with *Overwrite existing* checked.
+
+New waypoints are appended to the files as a line, keeping the existing formatting and comments. Overwriting a waypoint regenerates the file and keeps only the comment block at its top.

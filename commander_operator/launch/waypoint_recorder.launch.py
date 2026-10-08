@@ -17,16 +17,15 @@ def generate_launch_description():
                         'package source to keep the recorded points in the repository.'),
         Node(
             package='commander_operator',
-            executable='commander_operator_node',
-            name='commander_operator',
+            executable='waypoint_recorder_node',
+            name='waypoint_recorder',
             parameters=[
+                {'map_frame': 'map'},
                 {'ecef_frame': 'FP_ECEF'},
                 {'data_dir': LaunchConfiguration('data_dir')},
             ],
             remappings=[
-                ('switch_mode', 'crl_commander/switch_mode'),
-                # ('operator_goal', 'operator_goal'),
-                # ('operator_sequence', 'operator_sequence'),0
+                ('reload_waypoints', 'commander_operator/reload'),
             ],
         ),
     ])

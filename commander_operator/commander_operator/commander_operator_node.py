@@ -1,127 +1,16 @@
-import glob
 import os
 
 from ament_index_python.packages import get_package_share_directory
+from commander_operator.waypoints import load_routes, load_waypoints
 from commander_operator_interfaces.msg import OperatorRequest
 from crl_commander_interfaces.msg import OperatorGoal, OperatorGoalArray
 from crl_commander_interfaces.srv import SwitchMode
-import pyproj
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
+from std_srvs.srv import Trigger
 # import tf2_ros
-import yaml
-
-WGS_TO_ECEF = pyproj.Transformer.from_crs('EPSG:4326', 'EPSG:4978')
-
-
-class Waypoint:
-
-    def __init__(self, name=None):
-        # Only 'mandatory' has a reasonable default value, others need flags to indicate
-        # whether they are being set or not.
-        self.use_max_linear_vel = False
-        self.use_max_angular_vel = False
-        self.use_lookahead_distance = False
-        self.max_linear_vel = -1.
-        self.max_angular_vel = -1.
-        self.lookahead_distance = -1.
-        self.mandatory = True
-        # self.x = 0.
-        # self.y = 0.
-        # self.frame_id = None
-        self.goal = OperatorGoal()
-        self.name = name
-
-    def from_dict(self, waypoint_dict, frame_id):
-        if 'max_linear_vel' in waypoint_dict:
-            self.max_linear_vel = float(waypoint_dict['max_linear_vel'])
-            self.use_max_linear_vel = True
-
-        if 'max_angular_vel' in waypoint_dict:
-            self.max_angular_vel = float(waypoint_dict['max_angular_vel'])
-            self.use_max_angular_vel = True
-
-        if 'lookahead_distance' in waypoint_dict:
-            self.lookahead_distance = float(waypoint_dict['lookahead_distance'])
-            self.use_lookahead_distance = True
-
-        if 'mandatory' in waypoint_dict:
-            self.mandatory = waypoint_dict['mandatory']
-
-        if ('lat' in waypoint_dict) and ('lon' in waypoint_dict):
-            # a wgs point
-            lat = waypoint_dict['lat']
-            lon = waypoint_dict['lon']
-            ecef_x, ecef_y, ecef_z = WGS_TO_ECEF.transform(lat, lon, 0)
-            self.x = ecef_x
-            self.y = ecef_y
-            self.z = ecef_z
-        elif ('x' in waypoint_dict) and ('y' in waypoint_dict):
-            self.x = float(waypoint_dict['x'])
-            self.y = float(waypoint_dict['y'])
-            self.z = 0.0
-        else:
-            return False, 'Did not find neither lat,lon nor x,y.'
-
-        self.frame_id = frame_id
-
-        self.goal = OperatorGoal()
-
-        self.goal.max_linear_vel = self.max_linear_vel
-        self.goal.use_max_linear_vel = self.use_max_linear_vel
-
-        self.goal.max_angular_vel = self.max_angular_vel
-        self.goal.use_max_angular_vel = self.use_max_angular_vel
-
-        self.goal.lookahead_distance = self.lookahead_distance
-        self.goal.use_lookahead_distance = self.use_lookahead_distance
-
-        self.goal.mandatory = self.mandatory
-
-        self.goal.goal.header.frame_id = self.frame_id
-        self.goal.goal.pose.position.x = self.x
-        self.goal.goal.pose.position.y = self.y
-        self.goal.goal.pose.position.z = self.z
-
-        return True, 'Success.'
-
-
-class Route:
-
-    def __init__(self):
-        self.waypoints = []
-
-    def get_route(self, selected_waypoints=None):
-        route = OperatorGoalArray()
-        if selected_waypoints is not None:
-            raise NotImplementedError('to be done')
-        else:
-            route.goals = [w.goal for w in self.waypoints]
-
-        return route
-
-    def from_dict(self, waypoint_dict, frame_id):
-        failed_waypoints = []
-        failed_waypoints_msgs = []
-
-        for i, name in enumerate(waypoint_dict['waypoints'].keys()):
-            waypoint = waypoint_dict['waypoints'][name]
-            w = Waypoint(name)
-            success, msg = w.from_dict(waypoint, frame_id)
-            if not success:
-                failed_waypoints.append(i + 1)
-                failed_waypoints_msgs.append(msg)
-                continue
-
-            self.waypoints.append(w)
-
-        if len(failed_waypoints):
-            return False, (f'Failed to load waypoints number: {failed_waypoints}. '
-                           f'For following reasons: {failed_waypoints_msgs}.')
-
-        return True, 'Success.'
 
 
 class CommanderOperator(Node):
@@ -162,91 +51,32 @@ class CommanderOperator(Node):
         self.operator_sequence_pub = self.create_publisher(
             OperatorGoalArray, 'operator_sequence', qos_profile=pub_qos)
 
-        self.waypoints = self.load_waypoints(
-            os.path.join(self.data_dir, 'waypoints.yaml'), None)
-        self.waypoints_wgs = self.load_waypoints(
-            os.path.join(self.data_dir, 'waypoints_wgs.yaml'), self.ecef_frame)
-        self.routes = self.load_routes(
-            os.path.join(self.data_dir, 'routes'), None)
-        self.routes_wgs = self.load_routes(
-            os.path.join(self.data_dir, 'routes_wgs'), self.ecef_frame)
+        self.load_all()
+
+        # Lets other nodes (e.g. waypoint_recorder) make newly saved goals available.
+        self.reload_srv = self.create_service(Trigger, '~/reload', self.reload_cb)
 
         self.request_id = 0
 
-    def load_waypoints(self, file_path, default_frame_id=None):
-        waypoints = {}
+    def load_all(self):
+        logger = self.get_logger()
+        self.waypoints = load_waypoints(
+            os.path.join(self.data_dir, 'waypoints.yaml'), logger, None)
+        self.waypoints_wgs = load_waypoints(
+            os.path.join(self.data_dir, 'waypoints_wgs.yaml'), logger, self.ecef_frame)
+        self.routes = load_routes(
+            os.path.join(self.data_dir, 'routes'), logger, None)
+        self.routes_wgs = load_routes(
+            os.path.join(self.data_dir, 'routes_wgs'), logger, self.ecef_frame)
 
-        if not os.path.exists(file_path):
-            self.get_logger().warning(
-                f'File {file_path} does not exist. Cannot load waypoints from it.')
-            return waypoints
-
-        with open(file_path, 'r') as f:
-            waypoints_yaml = yaml.safe_load(f)
-            for waypoint_name in waypoints_yaml['waypoints'].keys():
-                waypoint_dict = waypoints_yaml['waypoints'][waypoint_name]
-
-                frame_id = None
-                if 'frame_id' in waypoints_yaml:
-                    frame_id = waypoints_yaml['frame_id']
-                elif default_frame_id is not None:
-                    frame_id = default_frame_id
-                else:
-                    self.get_logger().error(
-                        'Frame_id not provided for non-wgs waypoints! Cannot proceed!')
-                    continue
-
-                w = Waypoint(waypoint_name)
-                success, msg = w.from_dict(waypoint_dict, frame_id)
-
-                if success:
-                    if waypoint_name in waypoints.keys():
-                        self.get_logger().warning(
-                            f"Detected duplicate waypoint '{waypoint_name}' in '{file_path}', "
-                            'overwriting the previous one!')
-                    waypoints[waypoint_name] = w
-                else:
-                    self.get_logger().error("Failed to load waypoint: '" + msg + "'")
-
-        return waypoints
-
-    def load_routes(self, folder_path, default_frame_id=None):
-        routes = {}
-        route_files = glob.glob(os.path.join(folder_path, '*.yaml'))
-
-        if not os.path.exists(folder_path):
-            self.get_logger().warning(
-                f'Folder {folder_path} does not exist. Cannot load routes from it.')
-            return routes
-
-        for route_file in route_files:
-            with open(route_file, 'r') as f:
-                waypoints_yaml = yaml.safe_load(f)
-
-                frame_id = None
-                if 'frame_id' in waypoints_yaml:
-                    frame_id = waypoints_yaml['frame_id']
-                elif default_frame_id is not None:
-                    frame_id = default_frame_id
-                else:
-                    self.get_logger().error(
-                        'Frame_id not provided for non-wgs routes! Cannot proceed!')
-                    continue
-
-                route = Route()
-                success, msg = route.from_dict(waypoints_yaml, frame_id)
-
-                if success:
-                    name = waypoints_yaml['name']
-                    if name in routes.keys():
-                        self.get_logger().warning(
-                            f"Detected duplicate route '{name}' in '{folder_path}', "
-                            'overwriting the previous one!')
-                    routes[name] = route
-                else:
-                    self.get_logger().error("Failed to load route: '" + msg + "'")
-
-        return routes
+    def reload_cb(self, request, response):
+        self.load_all()
+        response.success = True
+        response.message = (
+            f'Loaded {len(self.waypoints)} waypoints, {len(self.waypoints_wgs)} wgs waypoints, '
+            f'{len(self.routes)} routes and {len(self.routes_wgs)} wgs routes.')
+        self.get_logger().info(response.message)
+        return response
 
     def get_goal_object_and_request(self, goal, route, wgs):
         goal_object = None

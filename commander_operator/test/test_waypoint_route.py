@@ -1,4 +1,4 @@
-from commander_operator.commander_operator_node import Route, Waypoint
+from commander_operator.waypoints import Route, Waypoint
 from crl_commander_interfaces.msg import OperatorGoalArray
 import pytest
 

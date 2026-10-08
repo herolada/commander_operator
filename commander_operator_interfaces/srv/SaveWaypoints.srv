@@ -1,0 +1,18 @@
+# Save clicked waypoints into the commander_operator data files.
+#
+# With an empty route_name a single waypoint is added to waypoints.yaml
+# (waypoints_wgs.yaml), otherwise all goals are written as a new route into
+# routes/<route_name>.yaml (routes_wgs/<route_name>.yaml).
+#
+# Each goal carries the clicked position (in any frame known to TF) and the
+# optional controller parameters (use_* flags), names[i] is the name of goals[i].
+
+bool wgs
+string route_name
+bool overwrite  # replace an existing waypoint of the same name / existing route file
+string[] names
+crl_commander_interfaces/OperatorGoal[] goals
+---
+bool success
+string message
+string file_path

@@ -1,0 +1,20 @@
+<library path="commander_operator_rviz">
+
+  <class name="commander_operator_rviz/WaypointClick"
+         type="commander_operator_rviz::WaypointClickTool"
+         base_class_type="rviz_common::Tool">
+    <description>
+      Click on the ground plane (z = 0 of the fixed frame) to add a waypoint to the
+      Waypoint Recorder panel.
+    </description>
+  </class>
+
+  <class name="commander_operator_rviz/WaypointRecorder"
+         type="commander_operator_rviz::WaypointRecorderPanel"
+         base_class_type="rviz_common::Panel">
+    <description>
+      Record waypoints and routes for commander_operator by clicking them in the map.
+    </description>
+  </class>
+
+</library>

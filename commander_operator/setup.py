@@ -33,7 +33,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'commander_operator_node = commander_operator.commander_operator_node:main'
+            'commander_operator_node = commander_operator.commander_operator_node:main',
+            'waypoint_recorder_node = commander_operator.waypoint_recorder_node:main',
         ],
     },
 )

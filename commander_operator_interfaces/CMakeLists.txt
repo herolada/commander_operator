@@ -8,9 +8,12 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(crl_commander_interfaces REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OperatorRequest.msg"
+  "srv/SaveWaypoints.srv"
+  DEPENDENCIES crl_commander_interfaces
 )
 
 if(BUILD_TESTING)
