@@ -149,13 +149,18 @@ class CommanderOperator(Node):
 
 
 def main():
+    # Explicit init/shutdown: rclpy.init() is not a context manager before Kilted (e.g. Jazzy).
+    rclpy.init()
+    commander_operator = None
     try:
-        with rclpy.init():
-            commander_operator = CommanderOperator()
-            rclpy.spin(commander_operator)
-
+        commander_operator = CommanderOperator()
+        rclpy.spin(commander_operator)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    finally:
+        if commander_operator is not None:
+            commander_operator.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

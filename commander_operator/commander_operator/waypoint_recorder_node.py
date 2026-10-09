@@ -127,13 +127,18 @@ class WaypointRecorder(Node):
 
 
 def main():
+    # Explicit init/shutdown: rclpy.init() is not a context manager before Kilted (e.g. Jazzy).
+    rclpy.init()
+    waypoint_recorder = None
     try:
-        with rclpy.init():
-            waypoint_recorder = WaypointRecorder()
-            rclpy.spin(waypoint_recorder, executor=MultiThreadedExecutor())
-
+        waypoint_recorder = WaypointRecorder()
+        rclpy.spin(waypoint_recorder, executor=MultiThreadedExecutor())
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    finally:
+        if waypoint_recorder is not None:
+            waypoint_recorder.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == '__main__':
