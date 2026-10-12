@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="https://mapy.com/">
+	<wpt lat="50.01" lon="14.01">
+		<ele>200.0</ele>
+		<name>New marker</name>
+	</wpt>
+	<wpt lat="50.02" lon="14.02">
+		<ele>204.9</ele>
+		<name>New marker</name>
+	</wpt>
+	<wpt lat="50.03" lon="14.03">
+		<ele>204.8</ele>
+		<name>New marker</name>
+	</wpt>
+	<wpt lat="50.04" lon="14.04">
+		<ele>204.7</ele>
+		<name>New marker</name>
+	</wpt>
+	<wpt lat="50.05" lon="14.05">
+		<ele>204.6</ele>
+		<name>New marker</name>
+	</wpt>
+</gpx>

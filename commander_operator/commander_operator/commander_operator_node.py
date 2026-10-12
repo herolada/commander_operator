@@ -5,6 +5,7 @@ from commander_operator.waypoints import load_routes, load_waypoints
 from commander_operator_interfaces.msg import OperatorRequest
 from crl_commander_interfaces.msg import OperatorGoal, OperatorGoalArray
 from crl_commander_interfaces.srv import SwitchMode
+from commander_operator.gpx_to_yaml import gpx_to_yaml_all
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
@@ -60,6 +61,10 @@ class CommanderOperator(Node):
 
     def load_all(self):
         logger = self.get_logger()
+
+        logger.info("Transforming all gpx files to yaml.")
+        gpx_to_yaml_all(os.path.join(self.data_dir, 'gpx'), os.path.join(self.data_dir, 'routes_wgs'))
+        
         self.waypoints = load_waypoints(
             os.path.join(self.data_dir, 'waypoints.yaml'), logger, None)
         self.waypoints_wgs = load_waypoints(

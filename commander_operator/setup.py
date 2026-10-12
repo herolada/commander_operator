@@ -18,6 +18,7 @@ setup(
         (os.path.join('share', package_name, 'data', 'routes'), glob('data/routes/*.yaml')),
         (os.path.join('share', package_name, 'data', 'routes_wgs'),
             glob('data/routes_wgs/*.yaml')),
+        (os.path.join('share', package_name, 'data', 'gpx'), glob('data/gpx/*.gpx')),
     ],
     package_data={'': ['py.typed']},
     install_requires=['setuptools'],
