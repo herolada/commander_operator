@@ -19,8 +19,10 @@ find_package(visualization_msgs REQUIRED)
 set(CMAKE_AUTOMOC ON)
 
 add_library(${PROJECT_NAME} SHARED
+  include/${PROJECT_NAME}/goal_sender_panel.hpp
   include/${PROJECT_NAME}/waypoint_click_tool.hpp
   include/${PROJECT_NAME}/waypoint_recorder_panel.hpp
+  src/goal_sender_panel.cpp
   src/waypoint_click_tool.cpp
   src/waypoint_recorder_panel.cpp
 )

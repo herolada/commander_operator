@@ -25,8 +25,9 @@ def generate_launch_description():
             ],
             remappings=[
                 ('switch_mode', 'crl_commander/switch_mode'),
+                ('goal', '~/goal'),
                 # ('operator_goal', 'operator_goal'),
-                # ('operator_sequence', 'operator_sequence'),0
+                # ('operator_sequence', 'operator_sequence'),
             ],
         ),
     ])

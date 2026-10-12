@@ -92,3 +92,7 @@ In RViz:
 3. Existing waypoints / route files are replaced only with *Overwrite existing* checked.
 
 New waypoints are appended to the files as a line, keeping the existing formatting and comments. Overwriting a waypoint regenerates the file and keeps only the comment block at its top.
+
+### Sending goals from RViz
+
+*Panels -> Add New Panel -> commander_operator_rviz/GoalSender*: type the waypoint / route name, check *Route* and / or *WGS* and press *Send* (or Enter). The panel publishes a single `OperatorRequest` on `/commander_operator/goal` (the topic can be changed with `GoalTopic` in the saved RViz config).

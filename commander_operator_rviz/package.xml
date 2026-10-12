@@ -3,7 +3,7 @@
 <package format="3">
   <name>commander_operator_rviz</name>
   <version>0.1.0</version>
-  <description>RViz panel and tool for recording commander_operator waypoints and routes.</description>
+  <description>RViz panels and tool for recording commander_operator waypoints and routes and requesting them.</description>
   <maintainer email="herolada@fel.cvut.cz">Adam Herold</maintainer>
   <license>Apache-2.0</license>
 

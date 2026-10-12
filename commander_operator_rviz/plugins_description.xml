@@ -17,4 +17,12 @@
     </description>
   </class>
 
+  <class name="commander_operator_rviz/GoalSender"
+         type="commander_operator_rviz::GoalSenderPanel"
+         base_class_type="rviz_common::Panel">
+    <description>
+      Send a single request for a stored waypoint or route to commander_operator.
+    </description>
+  </class>
+
 </library>
