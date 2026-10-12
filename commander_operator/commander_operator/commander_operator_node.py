@@ -25,6 +25,29 @@ class CommanderOperator(Node):
             get_package_share_directory('commander_operator'), 'data')
         self.data_dir = self.declare_parameter('data_dir', default_data_dir).value
 
+        goto_mode_string = self.declare_parameter('goto_mode', 'GOTO').value
+        
+        if goto_mode_string == "WAYPOINT_EXPLORATION" or goto_mode_string == "WEX":
+            self.goto_mode = SwitchMode.Request.MODE_WEX
+        elif goto_mode_string == "GOTO":
+            self.goto_mode = SwitchMode.Request.MODE_GOTO
+        else:
+            self.get_logger().info(f"Unknown waypoint mode {goto_mode_string}. Defaulting to GOTO")
+            self.goto_mode = SwitchMode.Request.MODE_GOTO
+
+
+        sequence_mode_string = self.declare_parameter('sequence_mode', 'SEQUENCE').value
+        
+        if sequence_mode_string == "WEX_SEQUENCE":
+            self.sequence_mode = SwitchMode.Request.MODE_WEX_SEQUENCE
+        elif sequence_mode_string == "SEQUENCE":
+            self.sequence_mode = SwitchMode.Request.MODE_SEQUENCE
+        else:
+            self.get_logger().info(f"Unknown route mode {sequence_mode_string}. Defaulting to SEQUENCE")
+            self.sequence_mode = SwitchMode.Request.MODE_SEQUENCE
+
+        self.get_logger().info(f"Selected commander modes: waypoint => {self.goto_mode}, route => {self.sequence_mode}")
+
         # self.tf_buffer = tf2_ros.Buffer()
         # self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
@@ -90,20 +113,20 @@ class CommanderOperator(Node):
             if wgs:
                 if goal in self.routes_wgs:
                     goal_object = self.routes_wgs[goal]
-                    request.mode = SwitchMode.Request.MODE_SEQUENCE
+                    request.mode = self.sequence_mode 
             else:
                 if goal in self.routes:
                     goal_object = self.routes[goal]
-                    request.mode = SwitchMode.Request.MODE_SEQUENCE
+                    request.mode = self.sequence_mode 
         else:
             if wgs:
                 if goal in self.waypoints_wgs:
                     goal_object = self.waypoints_wgs[goal]
-                    request.mode = SwitchMode.Request.MODE_GOTO
+                    request.mode = self.goto_mode 
             else:
                 if goal in self.waypoints:
                     goal_object = self.waypoints[goal]
-                    request.mode = SwitchMode.Request.MODE_GOTO
+                    request.mode = self.goto_mode
 
         return goal_object, request
 
