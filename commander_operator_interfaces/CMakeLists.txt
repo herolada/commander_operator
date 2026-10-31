@@ -13,6 +13,7 @@ find_package(crl_commander_interfaces REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OperatorRequest.msg"
   "srv/SaveWaypoints.srv"
+  "srv/SendOperatorRequest.srv"
   DEPENDENCIES crl_commander_interfaces
 )
 

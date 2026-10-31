@@ -3,10 +3,12 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from commander_operator.waypoints import load_routes, load_waypoints
 from commander_operator_interfaces.msg import OperatorRequest
+from commander_operator_interfaces.srv import SendOperatorRequest
 from crl_commander_interfaces.msg import OperatorGoal, OperatorGoalArray
 from crl_commander_interfaces.srv import SwitchMode
 from commander_operator.gpx_to_yaml import gpx_to_yaml_all
 import rclpy
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
@@ -52,13 +54,19 @@ class CommanderOperator(Node):
         # self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # reliable qos by default
-        self.commander_switch_mode_client = self.create_client(SwitchMode, 'switch_mode')
+        # Reentrant, so send_op_req_cb can await the response: a callback group stays busy
+        # until its (async) callback returns, the response would never be processed otherwise.
+        self.commander_switch_mode_client = self.create_client(
+            SwitchMode, 'switch_mode', callback_group=ReentrantCallbackGroup())
 
         # not necessary since we check when sending the request down the stream...
         # while not self.commander_switch_mode_client.wait_for_service(timeout_sec=1.0):
         #     self.get_logger().warning(
         #         "'switch_mode' service of commander not available yet, "
         #         'start the commander node, waiting...')
+
+        # we need the service for the interfacing with the behavior tree (it needs confirmation that the request works out)
+        self.send_operator_request_server = self.create_service(SendOperatorRequest, '~/operator_request', self.send_op_req_cb)
 
         sub_qos = QoSProfile(depth=10, reliability=QoSReliabilityPolicy.RELIABLE)
         pub_qos = QoSProfile(
@@ -130,10 +138,10 @@ class CommanderOperator(Node):
 
         return goal_object, request
 
-    def operator_request_cb(self, msg):
-        wgs = msg.wgs
-        route = msg.route
-        goal = msg.goal
+    def process_operator_request(self, req: OperatorRequest):
+        wgs = req.wgs
+        route = req.route
+        goal = req.goal
 
         goal_object, request = self.get_goal_object_and_request(goal, route, wgs)
 
@@ -160,7 +168,22 @@ class CommanderOperator(Node):
         req_id = self.request_id
         future = self.commander_switch_mode_client.call_async(request)
         future.add_done_callback(
-            lambda f: self.switch_mode_done(f, req_id, request.mode, msg.goal))
+            lambda f: self.switch_mode_done(f, req_id, request.mode, req.goal))
+        return future
+    
+    async def send_op_req_cb(self, req, res):
+        # Answered once the commander accepted (or rejected) the mode switch.
+        res.success = False
+        future = self.process_operator_request(req.request)
+        if future is not None:
+            try:
+                res.success = (await future).success
+            except Exception:
+                pass  # logged in switch_mode_done
+        return res
+
+    def operator_request_cb(self, msg):
+        self.process_operator_request(msg)
 
     def switch_mode_done(self, future, req_id, mode, goal_name):
         if req_id != self.request_id:
@@ -174,7 +197,6 @@ class CommanderOperator(Node):
             self.get_logger().info(f"'{goal_name}' sent, commander: {res.message}")
         else:
             self.get_logger().error(f"Commander rejected mode '{mode}': {res.message}")
-
 
 def main():
     # Explicit init/shutdown: rclpy.init() is not a context manager before Kilted (e.g. Jazzy).
